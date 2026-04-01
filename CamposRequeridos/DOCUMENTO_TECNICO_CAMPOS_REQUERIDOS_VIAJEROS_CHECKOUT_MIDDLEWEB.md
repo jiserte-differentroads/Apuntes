@@ -37,6 +37,7 @@ Objetivo:
 - Si destino del tour está en continentes **no Europa**: `passport` y `passportexpiration` por viajero.
 
 > Nota: los campos de “seguros” (DNI del viajero principal) y los de documentación (pasaporte/caducidad) pueden ser:
+>
 > - **obligatorios en checkout** si la configuración lo indica, o
 > - **requeridos para completar después** (workflows/avisos), pero no bloquean crear la reserva.
 
@@ -85,6 +86,8 @@ flowchart TD
   TB --> P
   DC --> P
 ```
+
+
 
 ##### Interfaz Middleweb (pantallas y comportamiento)
 
@@ -191,7 +194,7 @@ Layout recomendado (4 bloques):
 - Accesibilidad/claridad:
   - Siempre mostrar la precedencia fija en un texto: “Departure > Tour > Global”.
 
-1) **Pantalla de configuración global**
+1. **Pantalla de configuración global**
 
 - Nuevo apartado en Middleweb: **“Campos requeridos de viajeros (Global)”**
 - Permite **ver y editar**:
@@ -203,7 +206,7 @@ Layout recomendado (4 bloques):
   - seleccionar `Requirement`
   - condiciones: `Condition_TripTypeId`, `Condition_LocationId` (continente/país), `Condition_AgeGroupId`
 
-2) **Ficha de Tour**
+1. **Ficha de Tour**
 
 - Sección “Campos requeridos de viajeros”:
   - **Ver configuración global** (solo lectura)
@@ -211,7 +214,7 @@ Layout recomendado (4 bloques):
 - El formulario debe hacer explícito que:
   - la configuración de Tour **pisa** la global para el mismo campo/condición (y `IsIncluded=false` sirve para “quitar” lo global).
 
-3) **Edición de Periodo / Departure / Salida**
+1. **Edición de Periodo / Departure / Salida**
 
 - Sección “Campos requeridos de viajeros”:
   - **Ver configuración global** (solo lectura)
@@ -225,13 +228,13 @@ Layout recomendado (4 bloques):
 
 Objetivo: en el paso 3 del checkout, la UI debe consultar qué pedir y validar antes de continuar.
 
-1) **Carga de requerimientos**
+1. **Carga de requerimientos**
 
 - Al entrar en el paso 3 (Traveler data form), llamar a:
   - `GET api/reservations/requirements?tourId=...&departureId=...`
 - Respuesta: listas `checkout` y `postCheckout` con `fieldCode/reservationFieldId/requirement` (y opcionalmente `displayOrder`).
 
-2) **Renderizado**
+1. **Renderizado**
 
 - **Parte superior (siempre visible)**:
   - siempre primero: `name`, `surname`, `email`, `phone`
@@ -239,7 +242,7 @@ Objetivo: en el paso 3 del checkout, la UI debe consultar qué pedir y validar a
 - **Botón “Ver más”**:
   - mostrar solo campos `Timing=PostCheckout` (no bloquean reservar) y/o opcionales si se decide.
 
-3) **Validación al continuar**
+1. **Validación al continuar**
 
 - Al pulsar continuar, llamar a:
   - `POST api/reservations/{reservationId}/travelers/validate`
@@ -303,7 +306,7 @@ Para tener trazabilidad y reglas de “principal” consistentes:
 Representa un “conjunto” de reglas activas para un ámbito.
 
 - `Id`
-- `ScopeType` (enum): `Global` | `Tour` | `Departure`
+- `ScopeType` (catálogo): `Global` | `Tour` | `Departure`
 - `TourId` (nullable)
 - `DepartureId` (nullable)
 - `IsActive` (bool)
@@ -322,13 +325,12 @@ Regla individual de requerimiento de un campo.
 - `Id`
 - `PolicyId`
 - `ReservationFieldId`
-- `Timing` (enum):
+- `Timing` (catálogo):
   - `Checkout` (bloquea crear reserva)
   - `PostCheckout` (se completa después)
-- `Requirement` (enum):
+- `Requirement` (catálogo) (**cuantificador/rol**, no “children-only”):
   - `RequiredForAllTravelers`
   - `RequiredForPrimaryTraveler`
-  - `RequiredForChildrenOnly`
   - `AtLeastOneTravelerMustProvide`
 - `IsIncluded` (bool):
   - `true`: el campo queda **incluido/activo** con esta configuración en el ámbito de la policy (y pisa ámbitos más generales).
@@ -336,7 +338,7 @@ Regla individual de requerimiento de un campo.
 - Condiciones (nullable):
   - `Condition_TripTypeId` (int?, opcional): referencia a `TripType.Id` (ej. `SINGLE=10`, `Mixto=35` según seed `triptypes.json`).
   - `Condition_LocationId` (int?, opcional): **referencia a un `Location` concreto** (país o continente). Tanto el país como el continente del tour son `Location` enlazados vía `TourLocation` con distinto `TourLocationType` (ver sección siguiente). Si la regla lleva `Condition_LocationId`, solo aplica cuando el destino resuelto del tour coincide con ese `LocationId` (útil para excepciones: p. ej. Reino Unido y pasaporte aunque el continente sea “Europa”).
-  - `Condition_AgeGroupId` (int?) (si se usa `AgeGroup`)
+  - `Condition_AgeGroupId` (int?): filtro por grupo de edad. Por ejemplo, “solo niños” se expresa como `Requirement=RequiredForAllTravelers` + `Condition_AgeGroupId=Child`.
 - Presentación UI (opcional):
   - `DisplayOrder` (int?): permite ordenar campos cuando haya varios adicionales.
   - **Nota de UX (Checkout)**:
@@ -407,7 +409,7 @@ erDiagram
     int PolicyId FK
     int ReservationFieldId FK
     string Timing "Checkout|PostCheckout"
-    string Requirement "All|Primary|ChildrenOnly|AtLeastOne"
+    string Requirement "All|Primary|AtLeastOne"
     bool IsIncluded
     int Condition_TripTypeId FK "nullable"
     int Condition_LocationId FK "nullable (país o continente)"
@@ -449,14 +451,16 @@ erDiagram
   }
 ```
 
+
+
 ---
 
 ### Destino del tour: país, continente y reglas por `LocationId`
 
 En el modelo ya existe la relación **tour ↔ localización** mediante `TourLocation`, con `TourLocationType` sembrado (entre otros) como:
 
-- **`COUNTRY`** (`Code`: `COUNTRY`): país del tour.
-- **`CONTINENT` / continente** (`Code`: `CONTINENT`): continente del tour.
+- `**COUNTRY`** (`Code`: `COUNTRY`): país del tour.
+- `**CONTINENT` / continente** (`Code`: `CONTINENT`): continente del tour.
 
 Ambos apuntan a entidades `Location`; la diferencia es el **tipo de vínculo** (`TourLocationTypeId`), no un duplicado de modelo. Eso permite que el motor use **un solo identificador**, `LocationId`, tanto si la regla se define a nivel **país** como **continente**.
 
@@ -464,8 +468,8 @@ Ambos apuntan a entidades `Location`; la diferencia es el **tipo de vínculo** (
 
 1. Obtener del tour las filas `TourLocation` relevantes (p. ej. la de tipo **COUNTRY** como destino principal para documentación; si hiciera falta contexto amplio, también la de **CONTINENT**).
 2. El **contexto** que se pasa al evaluador de reglas incluye al menos:
-   - `primaryCountryLocationId` — `LocationId` del `TourLocation` con tipo COUNTRY (si existe).
-   - `continentLocationId` — `LocationId` del `TourLocation` con tipo CONTINENT (si existe).
+  - `primaryCountryLocationId` — `LocationId` del `TourLocation` con tipo COUNTRY (si existe).
+  - `continentLocationId` — `LocationId` del `TourLocation` con tipo CONTINENT (si existe).
 3. Una regla con `Condition_LocationId = X` aplica si **X coincide** con el país del tour, con el continente, o con la convención que acordéis (p. ej. “match por país primero; si la regla es de continente, comparar con `continentLocationId`”). Lo importante es que **una sola columna** referencia cualquier `Location` válido para el caso.
 
 #### Por qué no basta solo con “Europa / fuera de Europa”
@@ -493,15 +497,15 @@ Orden de precedencia sugerido: reglas con `Condition_LocationId` **más específ
 
 1. Cargar policies activas: `Global` + `Tour(tourId)` + `Departure(departureId)`.
 2. Aplanar reglas y evaluar condiciones:
-   - incluir regla si todas sus condiciones (si existen) se cumplen; en particular, si la regla define `Condition_LocationId`, comprobar coincidencia con el `LocationId` del país y/o del continente del tour según la convención acordada.
+  - incluir regla si todas sus condiciones (si existen) se cumplen; en particular, si la regla define `Condition_LocationId`, comprobar coincidencia con el `LocationId` del país y/o del continente del tour según la convención acordada.
 3. Resolver conflictos por `ReservationFieldId` por **proximidad**:
-   - para cada `ReservationFieldId`, si existe regla en `Departure`, se usa esa; si no, se usa la de `Tour`; si no, la `Global`.
-   - si la regla efectiva tiene `IsIncluded=false`, el campo se considera **desactivado** (aunque exista en Global).
+  - para cada `ReservationFieldId`, si existe regla en `Departure`, se usa esa; si no, se usa la de `Tour`; si no, la `Global`.
+  - si la regla efectiva tiene `IsIncluded=false`, el campo se considera **desactivado** (aunque exista en Global).
 4. Producir salida:
-   - `checkoutRequirements`: reglas con `Timing=Checkout`
-   - `postCheckoutRequirements`: reglas con `Timing=PostCheckout`
+  - `checkoutRequirements`: reglas con `Timing=Checkout`
+  - `postCheckoutRequirements`: reglas con `Timing=PostCheckout`
 5. Validaciones globales:
-   - Para `AtLeastOneTravelerMustProvide(email)` y `AtLeastOneTravelerMustProvide(phone)`: comprobar que al menos 1 viajero lo aporta (o que el principal lo aporta, según decisión de UX).
+  - Para `AtLeastOneTravelerMustProvide(email)` y `AtLeastOneTravelerMustProvide(phone)`: comprobar que al menos 1 viajero lo aporta (o que el principal lo aporta, según decisión de UX).
 
 ---
 
@@ -576,7 +580,7 @@ Reglas condicionales globales (si aplican siempre):
 
 - `sex`: `IsIncluded=true`, `Timing=Checkout`, `RequiredForAllTravelers`, `Condition_TripTypeId in (10, 35)` (SINGLE y Mixto, según seed `triptypes.json`)
 - `birthdate`:
-  - `IsIncluded=true`, `Timing=Checkout`, `RequiredForChildrenOnly`, `Condition=AnyChildExists` (si se modela) o usando `AgeGroupId=Child`
+  - `IsIncluded=true`, `Timing=Checkout`, `RequiredForAllTravelers`, `Condition_AgeGroupId=Child` (la “aplicación a niños” se modela con condición, no con un RequirementType específico)
 - Documentación:
   - Reglas por continente (recomendado, simplifica): usar `Condition_LocationId` apuntando al `LocationId` del continente del tour:
     - Continente `EU` (Europa) → `IsIncluded=true`, `national_id` al viajero principal (por defecto `Timing=PostCheckout`, movible a `Checkout` por configuración).
@@ -590,24 +594,29 @@ Reglas condicionales globales (si aplican siempre):
 ### Ejemplos de uso (configuración y resultado)
 
 > Nota: los IDs de ejemplo (`TourId`, `DepartureId`, `LocationId`, etc.) son ilustrativos. Los `ReservationFieldId` sí están alineados con el seed actual (`ReservationFieldSeeder.cs`):
+>
 > - `name`=1, `surname`=13, `email`=11, `phone`=12, `sex`=4, `birthdate`=5, `national_id`=2, `passport`=3, `passportexpiration`=6.
 
 #### Ejemplo A: Configuración global mínima (siempre)
 
 `ReservationFieldPolicy`:
 
+
 | ScopeType | TourId | DepartureId | IsActive |
-|----------|--------|-------------|----------|
-| Global   | null   | null        | true     |
+| --------- | ------ | ----------- | -------- |
+| Global    | null   | null        | true     |
+
 
 `ReservationFieldPolicyRule` (Scope=Global):
 
+
 | ReservationFieldId | IsIncluded | Timing   | Requirement                   | Condiciones |
-|-------------------:|:----------:|----------|-------------------------------|------------|
-| 1 (name)           | true       | Checkout | RequiredForAllTravelers       | - |
-| 13 (surname)       | true       | Checkout | RequiredForAllTravelers       | - |
-| 11 (email)         | true       | Checkout | AtLeastOneTravelerMustProvide | - |
-| 12 (phone)         | true       | Checkout | AtLeastOneTravelerMustProvide | - |
+| ------------------ | ---------- | -------- | ----------------------------- | ----------- |
+| 1 (name)           | true       | Checkout | RequiredForAllTravelers       | -           |
+| 13 (surname)       | true       | Checkout | RequiredForAllTravelers       | -           |
+| 11 (email)         | true       | Checkout | AtLeastOneTravelerMustProvide | -           |
+| 12 (phone)         | true       | Checkout | AtLeastOneTravelerMustProvide | -           |
+
 
 Resultado esperado (UI):
 
@@ -618,10 +627,12 @@ Resultado esperado (UI):
 
 Reglas (Scope=Global) para `sex`:
 
+
 | ReservationFieldId | IsIncluded | Timing   | Requirement             | Condition_TripTypeId |
-|-------------------:|:----------:|----------|-------------------------|----------------------|
-| 4 (sex)            | true       | Checkout | RequiredForAllTravelers | 10 (SINGLE) |
-| 4 (sex)            | true       | Checkout | RequiredForAllTravelers | 35 (Mixto) |
+| ------------------ | ---------- | -------- | ----------------------- | -------------------- |
+| 4 (sex)            | true       | Checkout | RequiredForAllTravelers | 10 (SINGLE)          |
+| 4 (sex)            | true       | Checkout | RequiredForAllTravelers | 35 (Mixto)           |
+
 
 Resultado esperado:
 
@@ -633,9 +644,11 @@ Supuesto: `continentLocationId = LocationId(EU)` para el tour.
 
 Regla (Scope=Global) para Europa:
 
+
 | ReservationFieldId | IsIncluded | Timing       | Requirement                | Condition_LocationId |
-|-------------------:|:----------:|--------------|----------------------------|----------------------|
-| 2 (national_id)    | true       | PostCheckout | RequiredForPrimaryTraveler | LocationId(EU) |
+| ------------------ | ---------- | ------------ | -------------------------- | -------------------- |
+| 2 (national_id)    | true       | PostCheckout | RequiredForPrimaryTraveler | LocationId(EU)       |
+
 
 Resultado esperado:
 
@@ -646,10 +659,12 @@ Resultado esperado:
 
 Para cada continente no EU (AS/AF/AM/OC/AN), reglas (Scope=Global):
 
-| ReservationFieldId | IsIncluded | Timing       | Requirement              | Condition_LocationId |
-|-------------------:|:----------:|--------------|--------------------------|----------------------|
-| 3 (passport)       | true       | PostCheckout | RequiredForAllTravelers  | LocationId(AS/AF/AM/OC/AN) |
-| 6 (passportexpiration) | true   | PostCheckout | RequiredForAllTravelers  | LocationId(AS/AF/AM/OC/AN) |
+
+| ReservationFieldId     | IsIncluded | Timing       | Requirement             | Condition_LocationId       |
+| ---------------------- | ---------- | ------------ | ----------------------- | -------------------------- |
+| 3 (passport)           | true       | PostCheckout | RequiredForAllTravelers | LocationId(AS/AF/AM/OC/AN) |
+| 6 (passportexpiration) | true       | PostCheckout | RequiredForAllTravelers | LocationId(AS/AF/AM/OC/AN) |
+
 
 Resultado esperado:
 
@@ -659,16 +674,20 @@ Resultado esperado:
 
 Reglas (Scope=Global o, preferiblemente, Scope=Tour si solo aplica a ciertos tours):
 
-| ReservationFieldId | IsIncluded | Timing       | Requirement             | Condition_LocationId |
-|-------------------:|:----------:|--------------|-------------------------|----------------------|
-| 3 (passport)       | true       | PostCheckout | RequiredForAllTravelers | LocationId(UK) |
-| 6 (passportexpiration) | true   | PostCheckout | RequiredForAllTravelers | LocationId(UK) |
+
+| ReservationFieldId     | IsIncluded | Timing       | Requirement             | Condition_LocationId |
+| ---------------------- | ---------- | ------------ | ----------------------- | -------------------- |
+| 3 (passport)           | true       | PostCheckout | RequiredForAllTravelers | LocationId(UK)       |
+| 6 (passportexpiration) | true       | PostCheckout | RequiredForAllTravelers | LocationId(UK)       |
+
 
 Y opcionalmente desactivar DNI para UK (si no aplica en ese caso):
 
+
 | ReservationFieldId | IsIncluded | Timing       | Requirement                | Condition_LocationId |
-|-------------------:|:----------:|--------------|----------------------------|----------------------|
-| 2 (national_id)    | false      | PostCheckout | RequiredForPrimaryTraveler | LocationId(UK) |
+| ------------------ | ---------- | ------------ | -------------------------- | -------------------- |
+| 2 (national_id)    | false      | PostCheckout | RequiredForPrimaryTraveler | LocationId(UK)       |
+
 
 Resultado esperado:
 
@@ -680,15 +699,19 @@ Objetivo: para `TourId=555`, pedir DNI del principal **en checkout** (arriba) au
 
 `ReservationFieldPolicy` (Scope=Tour):
 
+
 | ScopeType | TourId | DepartureId | IsActive |
-|----------|--------|-------------|----------|
-| Tour     | 555    | null        | true     |
+| --------- | ------ | ----------- | -------- |
+| Tour      | 555    | null        | true     |
+
 
 Regla (Scope=Tour):
 
+
 | ReservationFieldId | IsIncluded | Timing   | Requirement                | Condition_LocationId |
-|-------------------:|:----------:|----------|----------------------------|----------------------|
-| 2 (national_id)    | true       | Checkout | RequiredForPrimaryTraveler | LocationId(EU) |
+| ------------------ | ---------- | -------- | -------------------------- | -------------------- |
+| 2 (national_id)    | true       | Checkout | RequiredForPrimaryTraveler | LocationId(EU)       |
+
 
 Resultado esperado:
 
@@ -700,9 +723,11 @@ Objetivo: un tour no quiere pedir `sex` aunque sea SINGLE/mixto (caso excepciona
 
 Policy (Scope=Tour, `TourId=777`) y regla:
 
+
 | ReservationFieldId | IsIncluded | Timing   | Requirement             | Condition_TripTypeId |
-|-------------------:|:----------:|----------|-------------------------|----------------------|
-| 4 (sex)            | false      | Checkout | RequiredForAllTravelers | 10 (SINGLE) |
+| ------------------ | ---------- | -------- | ----------------------- | -------------------- |
+| 4 (sex)            | false      | Checkout | RequiredForAllTravelers | 10 (SINGLE)          |
+
 
 Resultado esperado:
 
@@ -714,10 +739,12 @@ Objetivo: para `DepartureId=9999` pedir pasaporte + caducidad en checkout (arrib
 
 Policy (Scope=Departure, `DepartureId=9999`) y reglas:
 
-| ReservationFieldId | IsIncluded | Timing   | Requirement             | Condition_LocationId |
-|-------------------:|:----------:|----------|-------------------------|----------------------|
-| 3 (passport)       | true       | Checkout | RequiredForAllTravelers | LocationId(AM) |
-| 6 (passportexpiration) | true   | Checkout | RequiredForAllTravelers | LocationId(AM) |
+
+| ReservationFieldId     | IsIncluded | Timing   | Requirement             | Condition_LocationId |
+| ---------------------- | ---------- | -------- | ----------------------- | -------------------- |
+| 3 (passport)           | true       | Checkout | RequiredForAllTravelers | LocationId(AM)       |
+| 6 (passportexpiration) | true       | Checkout | RequiredForAllTravelers | LocationId(AM)       |
+
 
 Resultado esperado:
 
@@ -732,10 +759,10 @@ Resultado esperado:
 3. Sembrar políticas globales mínimas (y condicionales base si procede).
 4. Implementar endpoint `GET api/reservations/requirements` y hacer que Checkout lo consuma.
 5. Implementar CRUD en Middleweb para que negocio/operación pueda ajustar:
-   - campos en checkout vs después,
-   - por tour y/o por salida.
+  - campos en checkout vs después,
+  - por tour y/o por salida.
 6. (Opcional) migrar configuraciones existentes:
-   - si `DepartureReservationField` contiene reglas útiles hoy, crear un script de migración que las copie a `PolicyRule` con `Scope=Departure`.
+  - si `DepartureReservationField` contiene reglas útiles hoy, crear un script de migración que las copie a `PolicyRule` con `Scope=Departure`.
 
 ---
 
