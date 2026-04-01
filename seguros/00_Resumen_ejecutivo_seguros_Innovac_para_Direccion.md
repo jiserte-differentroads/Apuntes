@@ -44,12 +44,9 @@ Se implementará un **apartado específico de Seguros** en la Middle, con foco o
   - Identificación de casos manuales (**RQ Issue**) y su gestión fuera del flujo automático, con trazabilidad hacia TK (Issue).
   - Auditoría y troubleshooting (logs de integración y reintentos controlados).
 
-## Enfoque por fases (alto nivel)
-- **Fase 1 (continuidad operativa)**:
+## Enfoque Alto Nivel
   - Los seguros siguen originándose/configurándose en **Tour/TK** como hasta ahora.
   - La Middle los consume como **Activities** y centraliza el seguimiento/visualización.
-
-- **Fase 2 (gestión completa)**:
   - La Middle orquesta la **contratación real** con Innovac/AON y persiste:
     - referencias de emisión/contrato,
     - estado del ciclo de vida,
@@ -67,10 +64,3 @@ Se implementará un **apartado específico de Seguros** en la Middle, con foco o
   - **Anular y re-emitir** (mantener 1 certificado por tipo).
   - **Incremental** (emitir certificados adicionales): el total por reserva puede ser **1..n**.
 - **Documento/almacenamiento**: decidir si guardamos solo `CERTIFICADO_URL` o si descargamos y almacenamos PDF/HTML como documento interno.
-
-## Indicadores recomendados (para seguimiento)
-- % reservas `confirm/paid` con seguros en estado correcto (sin pendientes improcedentes).
-- Tiempo medio de contratación (desde `paid` hasta `issued`).
-- Ratio de errores / reintentos por operación (issue/cert/html/cancel).
-- Volumen de excepciones RQ y tiempo de resolución.
-
