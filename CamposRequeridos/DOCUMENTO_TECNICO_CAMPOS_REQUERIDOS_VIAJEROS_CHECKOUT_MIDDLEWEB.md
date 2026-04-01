@@ -72,6 +72,115 @@ Además, deben poder aplicarse por:
 
 Objetivo: poder gestionar políticas en 3 niveles, siempre mostrando herencia y permitiendo override por proximidad.
 
+```mermaid
+flowchart TD
+  A[Configuración Global<br/>Campos requeridos viajeros] -->|ver/editar| GA[Rules Global]
+  B[Ficha Tour<br/>Campos requeridos viajeros] -->|ver| GB[Global (solo lectura)]
+  B -->|editar| TB[Tour override (editable)]
+  C[Edición Departure/Periodo<br/>Campos requeridos viajeros] -->|ver| GC[Global (solo lectura)]
+  C -->|ver| TC[Tour (solo lectura)]
+  C -->|editar| DC[Departure override (editable)]
+
+  GA --> P[Preview resultado efectivo]
+  TB --> P
+  DC --> P
+```
+
+##### Interfaz Middleweb (pantallas y comportamiento)
+
+> Esta sección describe la UI/UX esperada. No define componentes concretos, pero sí los flujos y los campos necesarios para operar con `ReservationFieldPolicy` y `ReservationFieldPolicyRule`.
+
+###### Navegación
+
+- Menú: `Configuración` → `Campos requeridos de viajeros (Global)`
+- Ficha de tour: pestaña/sección `Campos requeridos de viajeros`
+- Edición de salida/periodo/departure: pestaña/sección `Campos requeridos de viajeros`
+
+###### Reglas comunes de la UI
+
+- La UI debe mostrar siempre:
+  - **Configuración efectiva** (lo que realmente aplica)
+  - y el **origen** por campo: `Global` / `Tour` / `Departure`
+- Para “quitar” un campo heredado, se crea una regla en el ámbito actual con:
+  - `IsIncluded=false` (override por exclusión)
+- Precedencia fija: **Departure > Tour > Global**
+
+###### Pantalla A: Configuración global (editable)
+
+**Objetivo**: editar la base del sistema.
+
+Layout recomendado:
+
+- Cabecera:
+  - Título: “Campos requeridos de viajeros (Global)”
+  - Selector “Policy global activa” (si se permite más de una; si no, se omite)
+  - Botón “Guardar”
+- Editor de reglas (tabla):
+  - Columnas:
+    - **Campo** (`ReservationField`: Name + Code)
+    - **Incluido** (`IsIncluded` toggle)
+    - **Momento** (`Timing`: Checkout / PostCheckout)
+    - **Aplicación** (`Requirement`)
+    - **Trip type** (`Condition_TripTypeId`, opcional; multi-select)
+    - **Destino** (`Condition_LocationId`, opcional; selector de `Location`)
+      - El selector debe permitir filtrar por **Continentes** y **Países** (ambos son `Location`)
+    - **Grupo edad** (`Condition_AgeGroupId`, opcional)
+    - **Orden** (`DisplayOrder`, opcional)
+  - Acciones:
+    - “Añadir regla”
+    - “Duplicar regla”
+    - “Eliminar regla”
+- Panel “Preview” (resultado efectivo):
+  - Inputs de contexto para simular:
+    - `TripTypeId`
+    - `continentLocationId`
+    - `primaryCountryLocationId` (opcional)
+    - `AgeGroupId/Hay niños`
+  - Outputs:
+    - Lista **Arriba (Checkout)** = reglas efectivas con `Timing=Checkout`
+    - Lista **Ver más (PostCheckout)** = reglas efectivas con `Timing=PostCheckout`
+
+###### Pantalla B: Tour (global solo lectura + override tour)
+
+**Objetivo**: permitir overrides por tour, viendo lo heredado.
+
+Layout recomendado (3 bloques):
+
+- **Global (solo lectura)**:
+  - tabla de reglas globales
+- **Tour (editable)**:
+  - tabla de reglas `ScopeType=Tour` para ese `TourId`
+  - acciones: “Añadir override”, “Guardar”
+  - al editar una regla:
+    - mostrar “Efectivo actual” (desde Global) y “Override Tour” (lo que se guardará)
+- **Resultado efectivo (preview real)**:
+  - muestra el conjunto Global + Tour, con origen por campo
+
+###### Pantalla C: Departure/Periodo/Salida (global + tour solo lectura + override departure)
+
+**Objetivo**: permitir overrides por salida, viendo global y tour.
+
+Layout recomendado (4 bloques):
+
+- **Global (solo lectura)**
+- **Tour (solo lectura)**
+- **Departure (editable)**:
+  - tabla `ScopeType=Departure` para ese `DepartureId`
+  - acciones: “Añadir override”, “Guardar”
+- **Resultado efectivo**:
+  - usa el contexto real cuando sea posible:
+    - `Departure.TripTypeId` (ya existe)
+    - continente/país del tour vía `TourLocation` (si la middle lo tiene disponible en ese formulario)
+
+###### Validaciones y restricciones recomendadas en Middleweb
+
+- Evitar duplicados en el mismo ámbito:
+  - misma combinación `ReservationFieldId` + condiciones (TripType/Location/AgeGroup) debería ser única.
+- `IsIncluded=false`:
+  - se puede permitir mantener `Timing/Requirement` rellenos, pero la UI debe dejar claro que **no aplica**.
+- Accesibilidad/claridad:
+  - Siempre mostrar la precedencia fija en un texto: “Departure > Tour > Global”.
+
 1) **Pantalla de configuración global**
 
 - Nuevo apartado en Middleweb: **“Campos requeridos de viajeros (Global)”**
