@@ -66,6 +66,100 @@ Además, deben poder aplicarse por:
 
 ---
 
+### Dónde tenemos que actuar (impacto por sistemas)
+
+#### Middleweb (configuración)
+
+Objetivo: poder gestionar políticas en 3 niveles, siempre mostrando herencia y permitiendo override por proximidad.
+
+1) **Pantalla de configuración global**
+
+- Nuevo apartado en Middleweb: **“Campos requeridos de viajeros (Global)”**
+- Permite **ver y editar**:
+  - Policies `ScopeType=Global` activas
+  - Rules asociadas (`ReservationFieldPolicyRule`)
+- Debe permitir:
+  - activar/desactivar (`IsIncluded`) por campo y condición
+  - seleccionar `Timing` (Checkout/PostCheckout)
+  - seleccionar `Requirement`
+  - condiciones: `Condition_TripTypeId`, `Condition_LocationId` (continente/país), `Condition_AgeGroupId`
+
+2) **Ficha de Tour**
+
+- Sección “Campos requeridos de viajeros”:
+  - **Ver configuración global** (solo lectura)
+  - **Configurar a nivel Tour** (crear/editar policy `ScopeType=Tour` para ese `TourId`)
+- El formulario debe hacer explícito que:
+  - la configuración de Tour **pisa** la global para el mismo campo/condición (y `IsIncluded=false` sirve para “quitar” lo global).
+
+3) **Edición de Periodo / Departure / Salida**
+
+- Sección “Campos requeridos de viajeros”:
+  - **Ver configuración global** (solo lectura)
+  - **Ver configuración del Tour** (solo lectura)
+  - **Configurar a nivel Departure** (crear/editar policy `ScopeType=Departure` para ese `DepartureId`)
+- Debe reflejar claramente la precedencia: Departure > Tour > Global.
+
+> UX recomendada en Middleweb: vista tipo “diff” por campo (resultado efectivo) y debajo el origen (Global/Tour/Departure) que lo está aportando.
+
+#### Web (Checkout v3, paso 3)
+
+Objetivo: en el paso 3 del checkout, la UI debe consultar qué pedir y validar antes de continuar.
+
+1) **Carga de requerimientos**
+
+- Al entrar en el paso 3 (Traveler data form), llamar a:
+  - `GET api/reservations/requirements?tourId=...&departureId=...`
+- Respuesta: listas `checkout` y `postCheckout` con `fieldCode/reservationFieldId/requirement` (y opcionalmente `displayOrder`).
+
+2) **Renderizado**
+
+- **Parte superior (siempre visible)**:
+  - siempre primero: `name`, `surname`, `email`, `phone`
+  - después, cualquier otro campo con `Timing=Checkout` (requerido) aplicable
+- **Botón “Ver más”**:
+  - mostrar solo campos `Timing=PostCheckout` (no bloquean reservar) y/o opcionales si se decide.
+
+3) **Validación al continuar**
+
+- Al pulsar continuar, llamar a:
+  - `POST api/reservations/{reservationId}/travelers/validate`
+- El backend valida contra la configuración efectiva:
+  - reglas por viajero (all/primary/children)
+  - reglas globales tipo “AtLeastOneTravelerMustProvide(email/phone)”
+- Si hay errores: devolver estructura por viajero/campo para pintar validaciones en el formulario.
+
+#### Web (Bookings v2 / vista de reserva)
+
+Objetivo: adaptar la vista de datos personales para:
+
+- mostrar correctamente los campos guardados (`ReservationTravelerField`) por viajero
+- y, si aplica, indicar “pendientes” (los `Timing=PostCheckout` requeridos que aún no estén completos)
+
+Regla de UI:
+
+- En el panel del viajero:
+  - Mostrar siempre `name/surname` (y `email/phone` si están presentes)
+  - Para campos requeridos post-checkout no completados, mostrar estado “pendiente” (y CTA si existe flujo de edición desde perfil).
+
+#### API / Backend
+
+Objetivo: centralizar la lógica de resolución + validación.
+
+- Implementar `GET api/reservations/requirements`:
+  - resuelve policies (Global + Tour + Departure), aplica condiciones, y produce `checkout`/`postCheckout`.
+- Implementar `POST api/reservations/{reservationId}/travelers/validate`:
+  - valida los datos presentes en `ReservationTravelerField` (o payload) contra la política efectiva.
+
+#### Sync Tourknife
+
+Objetivo: eliminar responsabilidad de “required fields” en TK y limitar payload al mínimo.
+
+- Ajustar la sincronización/llamadas a TK para que **solo se envíen `Nombre` y `Apellidos`** por viajero (cuando TK lo requiera).
+- Evitar que TK/sync rellene o sea fuente de verdad de configuraciones de requerimientos (no poblar `DepartureReservationField` como required fields).
+
+---
+
 ### Modelo de datos propuesto
 
 > Nota: los nombres son orientativos; lo importante es el modelo.
