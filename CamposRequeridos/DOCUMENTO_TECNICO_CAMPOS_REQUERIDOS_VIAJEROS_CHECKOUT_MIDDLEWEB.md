@@ -105,6 +105,16 @@ flowchart TD
   - `IsIncluded=false` (override por exclusión)
 - Precedencia fija: **Departure > Tour > Global**
 
+###### Ayuda, autodocumentación y coherencia (obligatorio en el diseño)
+
+Las tres pantallas (Global, Tour, Departure) deben permitir que **operación y negocio** configuren políticas **sin depender de explicaciones del equipo técnico**. Criterios mínimos:
+
+- **Texto introductorio** en cada pantalla (1–2 párrafos): qué ámbito se edita (solo global / solo este tour / solo esta salida), qué pasa con lo no definido (herencia), y recordatorio de precedencia **Departure > Tour > Global** cuando aplique.
+- **Tooltips** en columnas y condiciones: `IsIncluded`, `Timing`, `Requirement`, `TripType`, `Location` (continente vs país), `AgeGroup`. Mismos textos y criterios en las tres pantallas para no generar dudas.
+- **Bloque “Cómo funciona”** (colapsable o ancla fácil de encontrar): Checkout vs PostCheckout; uso de `LocationId` para destino; mínimos de reserva (nombre/apellidos en todos; email/teléfono al menos en un viajero); enlace o referencia al documento técnico adjunto a la User Story #1414.
+- **Pantalla Tour**: texto fijo del tipo “Estás editando solo este tour; lo no definido aquí sigue heredado de Global” y **ejemplos cortos** (quitar un campo heredado con `IsIncluded=false`; subir un campo a Checkout solo en este tour).
+- **Pantalla Departure**: **banner visible** con el orden de aplicación y que los cambios afectan **solo a esta salida**; ejemplos de cuándo usar override puntual (ej. forzar documentación en checkout en una fecha concreta).
+
 ###### Pantalla A: Configuración global (editable)
 
 **Objetivo**: editar la base del sistema.
