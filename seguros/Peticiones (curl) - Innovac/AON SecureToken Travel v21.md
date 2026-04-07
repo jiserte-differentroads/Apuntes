@@ -24,7 +24,13 @@ Antes de emitir:
 
 ### Endpoint
 
-**Pruebas**
+**QC / pruebas (verificado — host `qc.aon.es`)**
+
+```text
+POST https://qc.aon.es/pruservices/elinperservicesRest/oauth2/token
+```
+
+**Pruebas (referencia PDF — host `www.aon.es`)**
 
 ```text
 POST https://www.aon.es/pruservices/elinperservicesRest/oauth2/token
@@ -44,14 +50,27 @@ application/json
 
 ### Petición
 
+Cuerpo JSON **sin** `scope` (alineado con petición verificada en QC):
+
+```bash
+curl --location --request POST 'https://qc.aon.es/pruservices/elinperservicesRest/oauth2/token' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "grant_type": "client_credentials",
+    "client_id": "'"${CLIENT_ID}"'",
+    "client_secret": "'"${CLIENT_SECRET}"'"
+  }'
+```
+
+**Producción** (mismo cuerpo, distinta URL):
+
 ```bash
 curl --location --request POST 'https://www.aon.es/services/elinperservicesRest/oauth2/token' \
   --header 'Content-Type: application/json' \
   --data-raw '{
     "grant_type": "client_credentials",
     "client_id": "'"${CLIENT_ID}"'",
-    "client_secret": "'"${CLIENT_SECRET}"'",
-    "scope": "string"
+    "client_secret": "'"${CLIENT_SECRET}"'"
   }'
 ```
 
@@ -72,6 +91,14 @@ curl --location --request POST 'https://www.aon.es/services/elinperservicesRest/
 ## 2) Llamar al servicio XML (configuración / emisión / etc.)
 
 ### URL del servicio XML
+
+**QC (`qc.aon.es`, verificado abril 2026)**
+
+```text
+https://qc.aon.es/pruservices/elinper/viajes/servicios/XMLCallRequest.aspx
+```
+
+En QC, la **configuración (productos)** respondió correctamente con **`POST`** `application/x-www-form-urlencoded` y el campo **`pXML`** (ver variante B más abajo). Un `POST` con el XML como body `text/xml` devolvió **HTTP 200** con **cuerpo vacío** en la misma prueba.
 
 **Producción**
 
@@ -98,13 +125,15 @@ curl --location --request POST 'https://www.aon.es/pruservices/elinper/viajes/se
 
 ### Variante B: XML como parámetro de formulario
 
+El formulario ASP.NET de AON usa el campo **`pXML`** (el PDF a veces habla genéricamente de “xml”; en la página de prueba el `textarea` se llama `pXML`).
+
 ```bash
 curl --location --request POST 'https://www.aon.es/pruservices/elinper/viajes/servicios/XMLCallRequest.aspx' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode "xml=<PETICION_...>...</PETICION_...>"
+  --data-urlencode "pXML=<PETICION_...>...</PETICION_...>"
 ```
 
-> Si al probar con Variante A no funciona, intentad Variante B (y viceversa).
+> Si al probar con Variante A no funciona, intentad Variante B con **`pXML`** (y viceversa).
 
 ## 3) Petición Inicial: Productos XML (configuración)
 
@@ -148,6 +177,8 @@ curl --location --request POST 'https://www.aon.es/pruservices/elinper/viajes/se
 ```
 
 > De la respuesta, idempotentemente, se extrae el `MODALIDAD codigo` (y los códigos de destino/duración) para el siguiente paso.
+
+**Ejemplo guardado (QC, respuesta real):** `ejemplo-respuesta-configuracion-qc.xml` en la carpeta `Apuntes/seguros` (XML minificado en una sola línea; ~390k caracteres; UTF-8).
 
 ## 4) Petición Certificado XML (emitir seguro)
 

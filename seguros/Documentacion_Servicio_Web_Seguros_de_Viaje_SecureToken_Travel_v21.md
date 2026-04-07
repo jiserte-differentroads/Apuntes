@@ -64,7 +64,13 @@ Se utiliza **OAuth2 Bearer Token** para identificar el punto de venta. Las crede
 
 ### Endpoint OAuth2
 
-**Pruebas**
+**QC / pruebas (verificado internamente — abril 2026)**
+
+```text
+POST https://qc.aon.es/pruservices/elinperservicesRest/oauth2/token
+```
+
+**Pruebas (según PDF — `www.aon.es`)**
 
 ```text
 POST https://www.aon.es/pruservices/elinperservicesRest/oauth2/token
@@ -84,14 +90,17 @@ application/json
 
 ### Petición
 
+En la práctica verificada en QC, el token se obtiene **sin** incluir `scope`:
+
 ```json
 {
   "grant_type": "client_credentials",
   "client_id": "string",
-  "client_secret": "string",
-  "scope": "string"
+  "client_secret": "string"
 }
 ```
+
+Si la documentación original menciona `scope`, tratarlo como opcional o según indicación de AON para vuestro convenio.
 
 ### Respuesta
 
