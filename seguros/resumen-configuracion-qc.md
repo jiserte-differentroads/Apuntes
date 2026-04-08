@@ -2,6 +2,19 @@
 
 Documento generado a partir de `Apuntes/seguros/ejemplo-respuesta-configuracion-qc.xml` (endpoint XMLCallRequest en entorno QC).
 
+## API interna (`core.differentroads.insurance`)
+
+Para obtener la misma información que este XML (lista de **modalidades / seguros** posibles, destinos, duraciones, coberturas), el backend expone:
+
+
+| Método | Ruta                                                      | Descripción                                                                                                                                                                                                                                                                   |
+| ------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/InnovacConfiguration` o `/InnovacConfiguration/seguros` | Petición **PETICION_CONFIGURACION** con XML mínimo (origen opcional vía `Innovac:TravelXml:DefaultOriginCode` en configuración). Respuesta: JSON con propiedad `xmlContent` cuyo texto es un **RESPUESTA_CONFIGURACION** como el de `ejemplo-respuesta-configuracion-qc.xml`. |
+| `POST` | `/InnovacConfiguration`                                   | Igual si el cuerpo está vacío; si envías XML, se inyecta el token OAuth en `AUTENTICACION`.                                                                                                                                                                                   |
+
+
+Requisitos: credenciales OAuth QC en `Innovac:OAuth` y URL del servicio XML configurada.
+
 ## Resumen ejecutivo
 
 - Modalidades (productos): **15**
