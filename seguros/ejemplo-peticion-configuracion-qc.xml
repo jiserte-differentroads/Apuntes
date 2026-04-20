@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PETICION_CONFIGURACION>
+  <!-- Sustituir por el access_token devuelto por /oauth2/token -->
+  <AUTENTICACION SECURETOKEN="PEGAR_ACCESS_TOKEN_AQUI"></AUTENTICACION>
+
+  <!-- Ajustar el origen según vuestro alta/configuración -->
+  <ORIGEN codigo="24"></ORIGEN>
+</PETICION_CONFIGURACION>

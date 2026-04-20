@@ -1,0 +1,9 @@
+{
+  "referenceCode": "",
+  "withoutReplacement": true,
+  "reasons": {
+    "dateError": false,
+    "durationError": false,
+    "others": "Prueba negativa"
+  }
+}

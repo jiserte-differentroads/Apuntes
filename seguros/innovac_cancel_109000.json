@@ -1,0 +1,9 @@
+{
+  "referenceCode": "109000",
+  "withoutReplacement": true,
+  "reasons": {
+    "dateError": false,
+    "durationError": false,
+    "others": "Error administrativo"
+  }
+}

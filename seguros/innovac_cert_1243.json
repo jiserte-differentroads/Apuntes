@@ -1,0 +1,17 @@
+{
+  "modalidadCode": "1243",
+  "destinationCode": "1",
+  "durationCode": "5",
+  "originCode": "24",
+  "startDate": "10/04/2026",
+  "endDate": "15/04/2026",
+  "insuredPeople": [
+    {
+      "name": "Nombre Apellidos",
+      "documentNumber": "12345678Z"
+    }
+  ],
+  "city": "Madrid",
+  "agencyReference": "PRUEBA-QC-001",
+  "language": "ES"
+}
