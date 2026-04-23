@@ -29,9 +29,9 @@ CONFIRMA TU SOLICITUD MEDIANTE TRANSFERENCIA
 Referencia: {reference} | Viaje: {tourName} | Salida: {departureDate} | Vuelo: {flight}
 
 Estimado/a viajero/a,
-Hemos registrado tu solicitud de reserva nº {reference} para el viaje {tourName}.
-Para continuar con la tramitación, es necesario que realices la transferencia correspondiente antes de la fecha y hora límite indicadas. Este paso nos permitirá avanzar con el proceso de gestión de tu solicitud.
-La transferencia deberá efectuarse **antes de las {limitDate} h del día {limitDate}**, utilizando cualquiera de las cuentas bancarias que se indican a continuación.
+Hemos registrado de reserva nº {reference} para el viaje {tourName}.
+Para continuar con la tramitación, es necesario que realices la transferencia correspondiente antes de la fecha y hora límite indicadas.
+La transferencia deberá efectuarse **antes de las {limitDate} h del día HOY**, utilizando cualquiera de las cuentas bancarias que se indican a continuación.
 Una vez realizada, deberás subir el justificante de pago desde tu perfil de Viajero o haciendo clic en el botón rojo “Subir justificante”, siempre dentro del plazo establecido.
 Si no se registra el justificante antes de la hora límite, la solicitud se cancelará automáticamente.
 Si tienes cualquier duda o necesitas ayuda durante el proceso, nuestro equipo de Atención al Cliente estará encantado de ayudarte a través del correo info@differentroads.es o en el teléfono 965 02 71 04.
