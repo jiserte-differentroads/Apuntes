@@ -22,6 +22,7 @@ Cancelar automáticamente las **reservas formalizadas** que se han quedado en **
 - **Pago aceptado**: pago cuyo `PaymentStatus.Code == "COMPLETED"`.
 - **Pago pendiente con justificante**: pago cuyo `PaymentStatus.Code == "PENDING"` y `ReservationPayment.AttachmentUrl` no es nulo/vacío.
 - **KO**: resultado KO del proceso de reserva/pago en checkout (p.ej. fallo en TPV/Scalapay o no se completa el flujo) que deja una reserva formalizada pero sin pagos aceptados.
+- **Cliente Different**: reserva creada por cliente final (B2C) en la web de Different. **De momento esta automatización no aplica a agencias**.
 
 ## Estados de reserva (clasificación operativa)
 
@@ -45,6 +46,7 @@ Según el Swagger, los estados actuales son:
 
 Se evalúan reservas **formalizadas** (estado `PREBOOKED` o posterior) que:
 
+- sean de **cliente Different** (B2C). **Excluir agencias**.
 - **no** estén en `CONFIRMED` ni `PAID`
 - **no** estén ya en `CANCELLED` o `DELETED`
 - **no** estén en `PREBOOKEDTK` (reservas de guías)
@@ -74,6 +76,7 @@ Se cancela la reserva si:
 
 1. Seleccionar reservas con:
    - `ReservedAt` en una fecha **anterior al día actual** (es decir, reservas formalizadas en días pasados)
+   - solo **cliente Different** (B2C), excluyendo agencias
    - `ReservationStatus.Code` en conjunto “formalizadas y no confirmadas” (por ejemplo: `PREBOOKED`, `ERROR`, `RQ*`, `BOOKED`, etc.)
    - excluyendo: `CONFIRMED`, `PAID`, `CANCELLED`, `DELETED`, `PREBOOKEDTK`
 2. Para cada reserva:
@@ -82,10 +85,28 @@ Se cancela la reserva si:
    - si existe pago `PENDING` con `AttachmentUrl` informado → **NO cancelar**
    - en caso contrario → **cambiar estado a `CANCELLED`**
 3. (Opcional recomendado) Registrar auditoría/telemetría: motivo “auto-cancel KO sin pago/justificante”.
+4. Enviar **únicamente** el **email de cancelación** (ver plantilla). No enviar emails de cuenta atrás/recordatorios.
+
+## Notificaciones (emails)
+
+- **No enviar** emails de cuenta atrás/recordatorios.
+- **Enviar solo** email cuando la reserva se cancele automáticamente por esta regla.
+
+### Plantilla: email de cancelación
+
+Estimado/a viajero/a,
+Lamentamos informarte de que el plazo de pago de tu reserva [{ID_RESERVA}] para el viaje {NOMBRE_TOUR} ha finalizado y, por este motivo, la reserva se ha cancelado automáticamente.
+¡Pero no tiene por qué ser el final del camino!
+Si todavía estás interesado/a en realizar este viaje, puedes consultar la disponibilidad actual y hacer una nueva reserva desde el siguiente botón:
+🔴 [Ver viaje y comprobar disponibilidad]
+{enlace al tour}
+Si tienes cualquier consulta o necesitas ayuda, nuestro equipo de Atención al Cliente estará encantado de atenderte en info@differentroads.es o en el 965 02 71 04.
+Esperamos verte pronto,
+Different Roads
 
 ## Casos borde a contemplar
 
-- **Pago pendiente sin justificante**: se cancela si supera \(T\).
+- **Pago pendiente sin justificante**: se cancela al pasar el corte (23:59) según la regla.
 - **Pago completado después de cancelar**: definir comportamiento (ideal: no debería ocurrir; si ocurre, tratar como incidencia).
 - **Reservas en `BOOKED` sin pagos**: se cancelarían si superan \(T\), salvo que exista `PENDING` con justificante (transferencia).
 - **`ERROR` vs `PREBOOKED`**: el Swagger indica que `PREBOOKED` puede representar internamente `ERROR`; se recomienda tratar ambos como “en verificación/pendiente”.
